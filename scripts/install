@@ -42,7 +42,8 @@ sudo apt-get install openvpn openvpn-auth-ldap -y -qq
 sudo useradd openvpn
 
 # Create DH for main domain
-sudo openssl dhparam -out /etc/yunohost/certs/$domain/dh.pem 2048 > /dev/null
+sudo openssl dhparam -out /etc/yunohost/certs/$domain/dh.pem 4096 > /dev/null
+sudo openvpn --genkey --secret /etc/yunohost/certs/$domain/ta.key
 
 # Make directories and set rights
 final_path=/var/www/openvpn
@@ -55,7 +56,17 @@ sudo chown openvpn: /var/log/openvpn.log
 sed -i "s@PATHTOCHANGE@$path@g" ../conf/nginx.conf
 sed -i "s@ALIASTOCHANGE@$final_path/@g" ../conf/nginx.conf
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/yunohost.conf
+echo "key-direction 0" >> ../conf/yunohost.conf
+echo "<tls-auth>" >> ../conf/yunohost.conf
+cat /etc/yunohost/certs/$domain/ta.key >> ../conf/yunohost.conf
+echo -e "\n</tls-auth>" >> ../conf/yunohost.conf
+
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/config.ovpn
+echo "key-direction 1" >> ../conf/config.ovpn
+echo "<tls-auth>" >> ../conf/config.ovpn
+cat /etc/yunohost/certs/$domain/ta.key >> ../conf/config.ovpn
+echo -e "\n</tls-auth>" >> ../conf/config.ovpn
+
 sed -i "s@DOMAINTOCHANGE@$domain@g" ../conf/config-cli.ovpn
 sudo cat /etc/ssl/certs/ca-yunohost_crt.pem >> ../conf/config-cli.ovpn
 echo -e "\n</ca>" >> ../conf/config-cli.ovpn
